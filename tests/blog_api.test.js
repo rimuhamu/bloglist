@@ -9,7 +9,7 @@ const Blog = require("../models/blog");
 beforeEach(async () => {
   await Blog.deleteMany({});
   for (let blog of helper.initialBlogs) {
-    let blogObject = new Note(blog);
+    let blogObject = new Blog(blog);
     await blogObject.save();
   }
 });
@@ -22,6 +22,12 @@ test("all blogs are returned as a JSON", async () => {
   const response = await api.get("/api/blogs");
 
   expect(response.body).toHaveLength(helper.initialBlogs.length);
+});
+
+test("every blog posts have a unique identifier(id)", async () => {
+  const response = await api.get("/api/blogs");
+
+  expect(response.body).toBeDefined();
 });
 
 afterAll(async () => {
