@@ -13,42 +13,61 @@ beforeEach(async () => {
     await blogObject.save();
   }
 });
+describe("when there is initally some blogs saved", () => {
+  test("all blogs are returned as a JSON", async () => {
+    await api
+      .get("/api/blogs")
+      .expect(200)
+      .expect("Content-Type", /application\/json/);
+    const response = await api.get("/api/blogs");
 
-test("all blogs are returned as a JSON", async () => {
-  await api
-    .get("/api/blogs")
-    .expect(200)
-    .expect("Content-Type", /application\/json/);
-  const response = await api.get("/api/blogs");
+    expect(response.body).toHaveLength(helper.initialBlogs.length);
+  });
 
-  expect(response.body).toHaveLength(helper.initialBlogs.length);
+  test("every blog posts have a unique identifier(id)", async () => {
+    const response = await api.get("/api/blogs");
+
+    expect(response.body).toBeDefined();
+  });
+});
+describe("addition of a new blog", () => {
+  test("blog is saved successfully", async () => {
+    const newBlog = {
+      title: "The Rust Programming Book",
+      author: "Rust FOundation",
+      url: "https://doc.rust-lang.org/stable/book/",
+      likes: 70,
+    };
+    await api
+      .post("/api/blogs")
+      .send(newBlog)
+      .expect(201)
+      .expect("Content-Type", /application\/json/);
+
+    const response = await api.get("/api/blogs");
+    const urls = response.body.map((res) => res.url);
+
+    expect(response.body).toHaveLength(helper.initialBlogs.length + 1);
+    expect(urls).toContain("https://doc.rust-lang.org/stable/book/");
+  });
+});
+describe("deletion of a blog", () => {
+  test("succeeds with status code 204 if id is valid", async () => {
+    const blogsAtStart = await helper.blogsInDb();
+    const blogToDelete = blogsAtStart[0];
+
+    await api.delete(`/api/blogs/${blogToDelete.id}`).expect(204);
+
+    const blogsAtEnd = await helper.blogsInDb();
+
+    expect(blogsAtEnd).toHaveLength(helper.initialBlogs.length - 1);
+
+    const urls = blogsAtEnd.map((res) => res.url);
+
+    expect(urls).not.toContain(blogToDelete.url);
+  });
 });
 
-test("every blog posts have a unique identifier(id)", async () => {
-  const response = await api.get("/api/blogs");
-
-  expect(response.body).toBeDefined();
-});
-
-test("blog is saved successfully", async () => {
-  const newBlog = {
-    title: "The Rust Programming Book",
-    author: "Rust FOundation",
-    url: "https://doc.rust-lang.org/stable/book/",
-    likes: 70,
-  };
-  await api
-    .post("/api/blogs")
-    .send(newBlog)
-    .expect(201)
-    .expect("Content-Type", /application\/json/);
-
-  const response = await api.get("/api/blogs");
-  const urls = response.body.map((res) => res.url);
-
-  expect(response.body).toHaveLength(helper.initialBlogs.length + 1);
-  expect(urls).toContain("https://doc.rust-lang.org/stable/book/");
-});
 afterAll(async () => {
   await mongoose.connection.close();
 });
