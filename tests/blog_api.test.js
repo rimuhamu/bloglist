@@ -30,6 +30,25 @@ test("every blog posts have a unique identifier(id)", async () => {
   expect(response.body).toBeDefined();
 });
 
+test("blog is saved successfully", async () => {
+  const newBlog = {
+    title: "The Rust Programming Book",
+    author: "Rust FOundation",
+    url: "https://doc.rust-lang.org/stable/book/",
+    likes: 70,
+  };
+  await api
+    .post("/api/blogs")
+    .send(newBlog)
+    .expect(201)
+    .expect("Content-Type", /application\/json/);
+
+  const response = await api.get("/api/blogs");
+  const urls = response.body.map((res) => res.url);
+
+  expect(response.body).toHaveLength(helper.initialBlogs.length + 1);
+  expect(urls).toContain("https://doc.rust-lang.org/stable/book/");
+});
 afterAll(async () => {
   await mongoose.connection.close();
 });
